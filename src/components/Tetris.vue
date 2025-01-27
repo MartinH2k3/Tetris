@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import {Point} from "@/utils/grid.js";
+import {Point, Grid} from "@/utils/grid.js";
 
-abstract class Tetromino {
+class Tetromino {
   public tiles: Point[] = [];
-  protected constructor(public center: Point) {
+  constructor(public center: Point) {
     this.center = center;
   }
   move(horizontally: number, vertically: number): void;
   move(distance: Point): void;
+  move(direction: "up"| "down" | "left" | "right"): void;
   move(a: number | Point, b?: number) {
     if (typeof a === 'number')
       this.tiles = this.tiles.map((point) => point.move(a, b as number));
@@ -30,56 +31,43 @@ abstract class Tetromino {
   }
 }
 
-class LBlock extends Tetromino {
-  constructor(public center: Point) {
-    super(center);
-    // center, upper part of L, lower part of L, right part of L
-    this.tiles = [center, center.move(0, -1), center.move(0, 1), center.move(1, 1)];
+function createTetromino(center: Point, type: "I"|"L"|"J"|"S"|"Z"|"T"|"O"): Tetromino {
+  const tetromino = new Tetromino(center);
+  switch (type){
+    case "I":
+      tetromino.tiles = [center, center.move(0, -1), center.move(0, 1), center.move(0, 2)];
+      break;
+    case "L":
+      tetromino.tiles = [center, center.move(0, -1), center.move(0, 1), center.move(1, 1)];
+      break;
+    case "J":
+      tetromino.tiles = [center, center.move(0, -1), center.move(0, 1), center.move(-1, 1)];
+      break;
+    case "S":
+      tetromino.tiles = [center, center.move(0, -1), center.move(1, 0), center.move(1, 1)];
+      break;
+    case "Z":
+      tetromino.tiles = [center, center.move(0, -1), center.move(-1, 0), center.move(-1, 1)];
+      break;
+    case "T":
+      tetromino.tiles = [center, center.move(0, -1), center.move(1, 0), center.move(-1, 0)];
+      break;
+    case "O":
+      tetromino.tiles = [center, center.move(0, -1), center.move(1, -1), center.move(1, 0)];
+      break;
   }
+  return tetromino;
 }
 
-class JBlock extends Tetromino {
-  constructor(public center: Point) {
-    super(center);
-    // center, upper part of J, lower part of J, left part of J
-    this.tiles = [center, center.move(0, -1), center.move(0, 1), center.move(-1, 1)];
-  }
+directions = {
+  "up": new Point(0, -1),
+  "down": new Point(0, 1),
+  "left": new Point(-1, 0),
+  "right": new Point(1, 0),
 }
 
-class ZBlock extends Tetromino {
-  constructor(public center: Point) {
-    super(center);
-    // center, upper part of Z, lower part of Z, right part of Z
-    this.tiles = [center, center.move(0, -1), center.move(1, 0), center.move(1, 1)];
-  }
-}
-
-class SBlock extends Tetromino {
-  constructor(public center: Point) {
-    super(center);
-    // center, upper part of S, lower part of S, left part of S
-    this.tiles = [center, center.move(0, -1), center.move(-1, 0), center.move(-1, 1)];
-  }
-}
-
-class TBlock extends Tetromino {
-  constructor(public center: Point) {
-    super(center);
-    // center, upper part of T, lower part of T, right part of T, left part of T
-    this.tiles = [center, center.move(0, -1), center.move(0, 1), center.move(1, 0), center.move(-1, 0)];
-  }
-}
-
-class IBlock extends Tetromino {
-  constructor(public center: Point) {
-    super(center);
-    this.tiles = [center, center.move(0, -1), center.move(0, 1)];
-  }
-  rotate() {
-
-  }
-}
-
+const grid = new Grid(10, 20);
+const tetromino = createTetromino(new Point(5, 0), "I");
 </script>
 
 <template>
