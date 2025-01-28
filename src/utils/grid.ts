@@ -28,4 +28,8 @@ export class Point {
   within(grid: Grid) {
     return this.x >= 0 && this.x < grid.width && this.y >= 0 && this.y < grid.height;
   }
+
+  equals(point: Point) {
+    return this.x === point.x && this.y === point.y;
+  }
 }
