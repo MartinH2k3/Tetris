@@ -201,6 +201,7 @@ function checkFullRows(): number {
 }
 
 let currTetromino = spawnTetromino();
+let nextShape: Ref<TetrominoShape> = ref(randomChoice(["I", "L", "J", "S", "Z", "T", "O"]));
 let heldShape: Ref<TetrominoShape | null> = ref(null);
 let switched = false;
 function fall(tetromino: Tetromino): void {
@@ -210,7 +211,8 @@ function fall(tetromino: Tetromino): void {
     renderMove(before, tetromino);
   } else {
     score.value += checkFullRows();
-    currTetromino = spawnTetromino();
+    currTetromino = spawnTetromino(nextShape.value);
+    nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
     switched = false;
   }
 }
@@ -232,6 +234,10 @@ function handleKeyDown(event: KeyboardEvent) {
       console.log('switching')
       let temp = currTetromino.shape;
       switched = true;
+      if (heldShape.value === null) {
+        heldShape.value = nextShape.value;
+        nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
+      }
       currTetromino = spawnTetromino(heldShape.value);
       heldShape.value = temp;
       break;
@@ -254,16 +260,20 @@ function handleKeyDown(event: KeyboardEvent) {
 // held tetromino
 const tetrominoPositions: Record<TetrominoShape, Array<{ x: number; y: number }>> = {
   I: [{ x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 }],
-  J: [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 }],
-  L: [{ x: 2, y: 1 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 }],
+  J: [{ x: 2, y: 1 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 }],
+  L: [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 }],
   O: [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 2 }],
   S: [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 0, y: 2 }, { x: 1, y: 2 }],
   T: [{ x: 1, y: 1 }, { x: 0, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 2 }],
   Z: [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 2 }],
 };
-const occupiedCells = computed(() => {
+const heldShapeCells = computed(() => {
   if (!heldShape.value) return [];
   return tetrominoPositions[heldShape.value!];
+});
+
+const nextShapeCells = computed(() => {
+  return tetrominoPositions[nextShape.value];
 });
 
 // style
@@ -275,7 +285,11 @@ function tileClass(tile: string | null): string {
 }
 
 function isHeldCell(row: number, col: number): boolean {
-  return occupiedCells.value.some(cell => cell.x === col && cell.y === row);
+  return heldShapeCells.value.some(cell => cell.x === col && cell.y === row);
+}
+
+function isNextCell(row: number, col: number): boolean {
+  return nextShapeCells.value.some(cell => cell.x === col && cell.y === row);
 }
 
 
@@ -335,7 +349,7 @@ onUnmounted(() => {
       </div>
     </div>
     <div class="side-container">
-      <h3 class="side-title">Held</h3>
+      <h3 class="side-title">Next</h3>
       <div class="side-grid">
         <div
             v-for="(row, rowIndex) in 4"
@@ -348,9 +362,9 @@ onUnmounted(() => {
               class="side-grid-cell"
           >
             <div
-                v-if="isHeldCell(rowIndex, colIndex)"
+                v-if="isNextCell(rowIndex, colIndex)"
                 class="side-grid-tetromino"
-                :class="`${heldShape.toLowerCase()}_block`"
+                :class="`${nextShape.toLowerCase()}_block`"
             ></div>
           </div>
         </div>
