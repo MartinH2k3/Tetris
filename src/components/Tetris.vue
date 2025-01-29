@@ -133,6 +133,12 @@ class Tetromino {
 
     return copy;
   }
+
+  remove(grid: Grid) {
+    for (const tile of this.tiles) {
+      grid.grid[tile.y][tile.x] = null;
+    }
+  }
 }
 
 function spawnTetromino(shape: TetrominoShape|null = null): Tetromino {
