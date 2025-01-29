@@ -150,6 +150,7 @@ function spawnTetromino(shape: TetrominoShape|null = null): Tetromino {
 
 const grid = reactive(new Grid(10, 24));
 const score = ref(0);
+const lost = ref(false);
 
 function renderMove(prev: Tetromino, next: Tetromino) {
   for (const tile of prev.tiles) {
