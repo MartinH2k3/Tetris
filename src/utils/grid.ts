@@ -8,6 +8,9 @@ export class Grid {
   area() {
     return this.width * this.height;
   }
+  clear() {
+    this.grid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+  }
   deepcopy(): Grid {
     const newGrid = new Grid(this.width, this.height);
     newGrid.grid = this.grid.map(row => row.slice());

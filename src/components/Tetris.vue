@@ -134,6 +134,15 @@ class Tetromino {
     return copy;
   }
 
+  aboveLine(y: number): boolean {
+    for (const tile of this.tiles) {
+      if (tile.y <= y) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   remove(grid: Grid) {
     for (const tile of this.tiles) {
       grid.grid[tile.y][tile.x] = null;
@@ -148,7 +157,8 @@ function spawnTetromino(shape: TetrominoShape|null = null): Tetromino {
   return new Tetromino(center, shape!);
 }
 
-const grid = reactive(new Grid(10, 24));
+const bufferHeight = 4;
+const grid = reactive(new Grid(10, 20+bufferHeight));
 const score = ref(0);
 const lost = ref(false);
 
@@ -210,7 +220,11 @@ function fall(tetromino: Tetromino): void {
   if (tetromino.validMove(directions.down, grid)) {
     tetromino.move(directions.down);
     renderMove(before, tetromino);
-  } else {
+  } else if (tetromino.aboveLine(bufferHeight)) {
+    lost.value = true;
+    clearInterval(intervalId);
+  }
+  else {
     score.value += checkFullRows();
     currTetromino = spawnTetromino(nextShape.value);
     nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
@@ -293,6 +307,15 @@ function isNextCell(row: number, col: number): boolean {
   return nextShapeCells.value.some(cell => cell.x === col && cell.y === row);
 }
 
+function restartGame(){
+  grid.clear();
+  score.value = 0;
+  lost.value = false;
+  currTetromino = spawnTetromino();
+  nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
+  heldShape.value = null;
+  switched = false;
+}
 
 // event listeners
 let intervalId: number | undefined;
@@ -309,6 +332,7 @@ onUnmounted(() => {
 </script>
 
 <template>
+
   <div class="main-container">
     <div class="side-container">
       <h3 class="side-title">Held</h3>
@@ -336,7 +360,7 @@ onUnmounted(() => {
       <h1> SCORE: {{ score }} </h1>
       <div class="board">
         <div
-            v-for="(row, rowIndex) in grid.grid.slice(4)"
+            v-for="(row, rowIndex) in grid.grid.slice(bufferHeight)"
             :key="rowIndex"
             class="row"
         >
@@ -369,6 +393,12 @@ onUnmounted(() => {
             ></div>
           </div>
         </div>
+      </div>
+    </div>
+    <div v-if="lost" class="game-over-overlay">
+      <div class="game-over-content">
+        <h2>Game Over</h2>
+        <button @click="restartGame">Restart</button>
       </div>
     </div>
   </div>
@@ -488,5 +518,26 @@ $side-grid-margin: 60px;
 .o_block {
   @extend .block;
   background-color: #ff0;
+}
+
+.game-over-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75); /* Semi-transparent dark background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Ensures the overlay is on top */
+}
+
+.game-over-content {
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 </style>
