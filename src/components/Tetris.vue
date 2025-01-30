@@ -332,6 +332,20 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown);
 });
+
+// Solver
+function evaluateGrid(grid: Grid): number{
+  let holes = 0;
+  let height = 0;
+  let heightSum = 0;
+  let bumpiness = 0;
+  let clearedRows = 0;
+  let score = 0;
+  // somehow measure these
+  // find some "hyperparameters" for the best evaluation function
+  let weights = [0, 0, 0, 0, 0, 0];
+  return holes*weights[0] + height*weights[1] + heightSum*weights[2] + bumpiness*weights[3] + clearedRows*weights[4] + score*weights[5];
+}
 </script>
 
 <template>
