@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Point, Grid } from "@/utils/grid";
-import { randomChoice } from "@/utils/vector";
+import { randomChoice } from "@/utils/array_helpers";
 import {computed, onMounted, onUnmounted, reactive, Ref, ref} from "vue";
 
 const directions = {
@@ -315,6 +315,9 @@ function restartGame(){
   nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
   heldShape.value = null;
   switched = false;
+  intervalId = window.setInterval(() => {
+    fall(currTetromino);
+  }, 500);
 }
 
 // event listeners
