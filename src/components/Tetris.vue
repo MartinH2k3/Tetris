@@ -408,6 +408,9 @@ onUnmounted(() => {
 <style scoped lang="scss">
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Sixtyfour&display=swap');
 
+$container-gap: 36px;
+$text-color: #000;
+$inverse-text-color: #fff;
 $cell-size: 20px;
 $cell-gap: 1px;
 $board-rows: 20;
@@ -418,12 +421,15 @@ $side-grid-margin: 60px;
 
 * {
   font-family: 'Share Tech Mono', monospace;
+  color: $text-color;
 }
 
 .main-container {
+  position: relative;
+  padding: $container-gap;
   display: flex;
   justify-content: center;
-  gap: 36px;
+  gap: $container-gap;
   width: fit-content;
 }
 
@@ -485,6 +491,40 @@ $side-grid-margin: 60px;
   box-sizing: border-box;
 }
 
+/* Game over overlay */
+.game-over-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.game-over-content {
+  padding: 40px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+
+  h2 {
+    color: $inverse-text-color;
+    cursor: default;
+  }
+  button {
+    color: $text-color;
+    background-color: $inverse-text-color;
+    border: none;
+    padding: 2px 5px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+}
+
 .i_block {
   @extend .block;
   background-color: #0af; /* Highlight cells occupied by the tetromino */
@@ -520,24 +560,4 @@ $side-grid-margin: 60px;
   background-color: #ff0;
 }
 
-.game-over-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.75); /* Semi-transparent dark background */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000; /* Ensures the overlay is on top */
-}
-
-.game-over-content {
-  background-color: #fff;
-  padding: 40px;
-  border-radius: 10px;
-  text-align: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-}
 </style>
