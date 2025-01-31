@@ -359,7 +359,7 @@ function evaluateGrid(grid: Grid): number{
     }
   }
   let height = Math.max(...column_heights) - clearedRows;
-  let heightSum = column_heights.reduce((a, b) => a + b, 0) - grid.width * clearedRows;
+  let heightSum = Math.sqrt(column_heights.reduce((a, b) => a + b, 0) - grid.width * clearedRows);
   let bumpiness = column_heights.slice(1).reduce((a, b, i) => a + Math.abs(b - column_heights[i]), 0);
   // find some "hyperparameters" for the best evaluation function
   let weights = [1, 1, 1, 1, 1];
