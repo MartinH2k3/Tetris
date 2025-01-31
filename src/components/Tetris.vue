@@ -225,6 +225,7 @@ function fall(tetromino: Tetromino): void {
     clearInterval(intervalId);
   }
   else {
+    console.log(evaluateGrid(grid));
     score.value += checkFullRows();
     currTetromino = spawnTetromino(nextShape.value);
     nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
@@ -336,15 +337,33 @@ onUnmounted(() => {
 // Solver
 function evaluateGrid(grid: Grid): number{
   let holes = 0;
-  let height = 0;
-  let heightSum = 0;
-  let bumpiness = 0;
+  let column_heights = Array(grid.width).fill(0);
   let clearedRows = 0;
-  let score = 0;
   // somehow measure these
+  for (let i = 0; i < grid.height; i++) {
+    let row = grid.grid[i];
+    let rowFilled = true;
+    for (let j = 0; j < grid.width; j++) {
+      if (row[j] === null) {
+        rowFilled = false;
+        if (column_heights[j] > 0) {
+          holes++;
+        }
+      }
+      else if (column_heights[j] === 0) {
+        column_heights[j] = grid.height - i;
+      }
+    }
+    if (rowFilled) {
+      clearedRows++;
+    }
+  }
+  let height = Math.max(...column_heights) - clearedRows;
+  let heightSum = column_heights.reduce((a, b) => a + b, 0) - grid.width * clearedRows;
+  let bumpiness = column_heights.slice(1).reduce((a, b, i) => a + Math.abs(b - column_heights[i]), 0);
   // find some "hyperparameters" for the best evaluation function
-  let weights = [0, 0, 0, 0, 0, 0];
-  return holes*weights[0] + height*weights[1] + heightSum*weights[2] + bumpiness*weights[3] + clearedRows*weights[4] + score*weights[5];
+  let weights = [1, 1, 1, 1, 1];
+  return holes*weights[0] + height*weights[1] + heightSum*weights[2] + bumpiness*weights[3] - clearedRows*weights[4];
 }
 </script>
 
@@ -367,7 +386,7 @@ function evaluateGrid(grid: Grid): number{
             <div
                 v-if="isHeldCell(rowIndex, colIndex)"
                 class="side-grid-tetromino"
-                :class="`${heldShape.toLowerCase()}_block`"
+                :class="`${heldShape?.toLowerCase()}_block`"
             ></div>
           </div>
         </div>
