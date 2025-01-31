@@ -136,7 +136,7 @@ class Tetromino {
 
   aboveLine(y: number): boolean {
     for (const tile of this.tiles) {
-      if (tile.y <= y) {
+      if (tile.y < y) {
         return true;
       }
     }
@@ -215,23 +215,6 @@ let currTetromino = spawnTetromino();
 let nextShape: Ref<TetrominoShape> = ref(randomChoice(["I", "L", "J", "S", "Z", "T", "O"]));
 let heldShape: Ref<TetrominoShape | null> = ref(null);
 let switched = false;
-function fall(tetromino: Tetromino): void {
-  let before = tetromino.deepcopy();
-  if (tetromino.validMove(directions.down, grid)) {
-    tetromino.move(directions.down);
-    renderMove(before, tetromino);
-  } else if (tetromino.aboveLine(bufferHeight)) {
-    lost.value = true;
-    clearInterval(intervalId);
-  }
-  else {
-    console.log(evaluateGrid(grid));
-    score.value += checkFullRows();
-    currTetromino = spawnTetromino(nextShape.value);
-    nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
-    switched = false;
-  }
-}
 
 function handleKeyDown(event: KeyboardEvent) {
   let before = currTetromino.deepcopy();
@@ -273,6 +256,37 @@ function handleKeyDown(event: KeyboardEvent) {
   renderMove(before, currTetromino);
 }
 
+function restartGame(){
+  grid.clear();
+  score.value = 0;
+  lost.value = false;
+  currTetromino = spawnTetromino();
+  nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
+  heldShape.value = null;
+  switched = false;
+  intervalId = window.setInterval(() => {
+    fall(currTetromino);
+  }, 500);
+}
+
+function fall(tetromino: Tetromino): void {
+  let before = tetromino.deepcopy();
+  if (tetromino.validMove(directions.down, grid)) {
+    tetromino.move(directions.down);
+    renderMove(before, tetromino);
+  } else if (tetromino.aboveLine(bufferHeight)) {
+    lost.value = true;
+    clearInterval(intervalId);
+  }
+  else {
+    console.log(evaluateGrid(grid));
+    score.value += checkFullRows();
+    currTetromino = spawnTetromino(nextShape.value);
+    nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
+    switched = false;
+  }
+}
+
 // held tetromino
 const tetrominoPositions: Record<TetrominoShape, Array<{ x: number; y: number }>> = {
   I: [{ x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 }],
@@ -308,19 +322,6 @@ function isNextCell(row: number, col: number): boolean {
   return nextShapeCells.value.some(cell => cell.x === col && cell.y === row);
 }
 
-function restartGame(){
-  grid.clear();
-  score.value = 0;
-  lost.value = false;
-  currTetromino = spawnTetromino();
-  nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
-  heldShape.value = null;
-  switched = false;
-  intervalId = window.setInterval(() => {
-    fall(currTetromino);
-  }, 500);
-}
-
 // event listeners
 let intervalId: number | undefined;
 onMounted(() => {
@@ -339,7 +340,6 @@ function evaluateGrid(grid: Grid): number{
   let holes = 0;
   let column_heights = Array(grid.width).fill(0);
   let clearedRows = 0;
-  // somehow measure these
   for (let i = 0; i < grid.height; i++) {
     let row = grid.grid[i];
     let rowFilled = true;
@@ -365,10 +365,19 @@ function evaluateGrid(grid: Grid): number{
   let weights = [1, 1, 1, 1, 1];
   return holes*weights[0] + height*weights[1] + heightSum*weights[2] + bumpiness*weights[3] - clearedRows*weights[4];
 }
+
+function bestMoves(grid: Grid, tetromino: Tetromino){
+  let bestScore = Infinity;
+  let bestSequence = '';
+  do {
+
+  }
+  while (tetromino.validMove(directions.right, grid));
+}
+
 </script>
 
 <template>
-
   <div class="main-container">
     <div class="side-container">
       <h3 class="side-title">Held</h3>
