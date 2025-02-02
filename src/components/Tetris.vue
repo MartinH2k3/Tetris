@@ -279,9 +279,10 @@ function fall(tetromino: Tetromino): void {
     clearInterval(intervalId);
   }
   else {
-    console.log(evaluateGrid(grid));
+    console.log(Solver.evaluateGrid(grid));
     score.value += checkFullRows();
     currTetromino = spawnTetromino(nextShape.value);
+    Solver.bestMoves(grid, tetromino);
     nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
     switched = false;
   }
@@ -336,45 +337,69 @@ onUnmounted(() => {
 });
 
 // Solver
-function evaluateGrid(grid: Grid): number{
-  let holes = 0;
-  let column_heights = Array(grid.width).fill(0);
-  let clearedRows = 0;
-  for (let i = 0; i < grid.height; i++) {
-    let row = grid.grid[i];
-    let rowFilled = true;
-    for (let j = 0; j < grid.width; j++) {
-      if (row[j] === null) {
-        rowFilled = false;
-        if (column_heights[j] > 0) {
-          holes++;
+class Solver {
+  static evaluateGrid(grid: Grid): number {
+    let holes = 0;
+    let column_heights = Array(grid.width).fill(0);
+    let clearedRows = 0;
+    for (let i = 0; i < grid.height; i++) {
+      let row = grid.grid[i];
+      let rowFilled = true;
+      for (let j = 0; j < grid.width; j++) {
+        if (row[j] === null) {
+          rowFilled = false;
+          if (column_heights[j] > 0) {
+            holes++;
+          }
+        } else if (column_heights[j] === 0) {
+          column_heights[j] = grid.height - i;
         }
       }
-      else if (column_heights[j] === 0) {
-        column_heights[j] = grid.height - i;
+      if (rowFilled) {
+        clearedRows++;
       }
     }
-    if (rowFilled) {
-      clearedRows++;
+    let height = Math.max(...column_heights) - clearedRows;
+    let heightSum = Math.sqrt(column_heights.reduce((a, b) => a + b, 0) - grid.width * clearedRows);
+    let bumpiness = column_heights.slice(1).reduce((a, b, i) => a + Math.abs(b - column_heights[i]), 0);
+    // find some "hyperparameters" for the best evaluation function
+    let weights = [1, 1, 1, 1, 1];
+    return holes * weights[0] + height * weights[1] + heightSum * weights[2] + bumpiness * weights[3] - clearedRows * weights[4];
+  }
+  static bestMoves(grid: Grid, tetromino: Tetromino) {
+    let bestScore = Infinity;
+    let bestSequence = '';
+    let tried = 0;
+    for (let rotations = 0; rotations < 4; rotations++){
+      let rotated = tetromino.deepcopy();
+      for (let i = 0; i < rotations; i++){
+        rotated.rotate(grid);
+      }
+      let movesLeft = 0;
+      while (rotated.validMove(directions.left, grid)){
+        rotated.move(directions.left);
+        movesLeft++;
+      }
+      console.log(`Rotations: ${rotations}, MovesLeft: ${movesLeft}`);
+      do {
+        tried++;
+        let gridCopy = grid.deepcopy();
+        let tetrominoCopy = rotated.deepcopy();
+        tetrominoCopy.drop(gridCopy);
+        let score = this.evaluateGrid(gridCopy);
+        if (score < bestScore){
+          bestScore = score;
+          bestSequence = 'x'.repeat(rotations) + (movesLeft >= 0 ? '<'.repeat(movesLeft) : '>'.repeat(-movesLeft));
+        }
+        console.log(`Score: ${score}, Sequence: ${'x'.repeat(rotations) + (movesLeft >= 0 ? '<'.repeat(movesLeft) : '>'.repeat(-movesLeft))}, movesLeft: ${movesLeft}`);
+        rotated.move(directions.right);
+        movesLeft--;
+      } while (rotated.validMove(directions.right, grid));
     }
+    console.log(`Tried ${tried} moves`);
+    return bestSequence;
   }
-  let height = Math.max(...column_heights) - clearedRows;
-  let heightSum = Math.sqrt(column_heights.reduce((a, b) => a + b, 0) - grid.width * clearedRows);
-  let bumpiness = column_heights.slice(1).reduce((a, b, i) => a + Math.abs(b - column_heights[i]), 0);
-  // find some "hyperparameters" for the best evaluation function
-  let weights = [1, 1, 1, 1, 1];
-  return holes*weights[0] + height*weights[1] + heightSum*weights[2] + bumpiness*weights[3] - clearedRows*weights[4];
 }
-
-function bestMoves(grid: Grid, tetromino: Tetromino){
-  let bestScore = Infinity;
-  let bestSequence = '';
-  do {
-
-  }
-  while (tetromino.validMove(directions.right, grid));
-}
-
 </script>
 
 <template>
