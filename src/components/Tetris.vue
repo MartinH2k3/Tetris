@@ -148,6 +148,12 @@ class Tetromino {
       grid.grid[tile.y][tile.x] = null;
     }
   }
+
+  addTo(grid: Grid) {
+    for (const tile of this.tiles) {
+      grid.grid[tile.y][tile.x] = this.shape;
+    }
+  }
 }
 
 function spawnTetromino(shape: TetrominoShape|null = null): Tetromino {
@@ -282,7 +288,7 @@ function fall(tetromino: Tetromino): void {
     console.log(Solver.evaluateGrid(grid));
     score.value += checkFullRows();
     currTetromino = spawnTetromino(nextShape.value);
-    Solver.bestMoves(grid, tetromino);
+    Solver.bestMoves(grid, currTetromino);
     nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
     switched = false;
   }
@@ -369,34 +375,36 @@ class Solver {
   static bestMoves(grid: Grid, tetromino: Tetromino) {
     let bestScore = Infinity;
     let bestSequence = '';
-    let tried = 0;
     for (let rotations = 0; rotations < 4; rotations++){
       let rotated = tetromino.deepcopy();
       for (let i = 0; i < rotations; i++){
         rotated.rotate(grid);
       }
-      let movesLeft = 0;
+      let offset = 0;
       while (rotated.validMove(directions.left, grid)){
         rotated.move(directions.left);
-        movesLeft++;
+        offset++;
       }
-      console.log(`Rotations: ${rotations}, MovesLeft: ${movesLeft}`);
+      console.log(`Rotations: ${rotations}`);
       do {
-        tried++;
+        // copies to not modify the original grid and tetromino
         let gridCopy = grid.deepcopy();
         let tetrominoCopy = rotated.deepcopy();
+        // check what happens if tetromino falls directly down
         tetrominoCopy.drop(gridCopy);
+        tetrominoCopy.addTo(gridCopy);
         let score = this.evaluateGrid(gridCopy);
+
         if (score < bestScore){
           bestScore = score;
-          bestSequence = 'x'.repeat(rotations) + (movesLeft >= 0 ? '<'.repeat(movesLeft) : '>'.repeat(-movesLeft));
+          bestSequence = 'x'.repeat(rotations) + (offset >= 0 ? '<'.repeat(offset) : '>'.repeat(-offset));
         }
-        console.log(`Score: ${score}, Sequence: ${'x'.repeat(rotations) + (movesLeft >= 0 ? '<'.repeat(movesLeft) : '>'.repeat(-movesLeft))}, movesLeft: ${movesLeft}`);
+        console.log(`Score: ${score}, Sequence: ${'x'.repeat(rotations) + (offset >= 0 ? '<'.repeat(offset) : '>'.repeat(-offset))}, movesLeft: ${offset}`);
+        console.log(`${rotated.center.y}`);
         rotated.move(directions.right);
-        movesLeft--;
+        offset--;
       } while (rotated.validMove(directions.right, grid));
     }
-    console.log(`Tried ${tried} moves`);
     return bestSequence;
   }
 }
