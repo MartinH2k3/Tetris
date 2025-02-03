@@ -405,6 +405,7 @@ class Solver {
         offset--;
       } while (rotated.validMove(directions.right, grid));
     }
+
     return bestSequence;
   }
 }
