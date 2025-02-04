@@ -288,7 +288,7 @@ function fall(tetromino: Tetromino): void {
     console.log(Solver.evaluateGrid(grid));
     score.value += checkFullRows();
     currTetromino = spawnTetromino(nextShape.value);
-    Solver.bestMoves(grid, currTetromino);
+    console.log(Solver.bestMoves(grid, currTetromino))
     nextShape.value = randomChoice(["I", "L", "J", "S", "Z", "T", "O"]);
     switched = false;
   }
@@ -385,7 +385,6 @@ class Solver {
         rotated.move(directions.left);
         offset++;
       }
-      console.log(`Rotations: ${rotations}`);
       do {
         // copies to not modify the original grid and tetromino
         let gridCopy = grid.deepcopy();
@@ -399,13 +398,10 @@ class Solver {
           bestScore = score;
           bestSequence = 'x'.repeat(rotations) + (offset >= 0 ? '<'.repeat(offset) : '>'.repeat(-offset));
         }
-        console.log(`Score: ${score}, Sequence: ${'x'.repeat(rotations) + (offset >= 0 ? '<'.repeat(offset) : '>'.repeat(-offset))}, movesLeft: ${offset}`);
-        console.log(`${rotated.center.y}`);
         rotated.move(directions.right);
         offset--;
       } while (rotated.validMove(directions.right, grid));
     }
-
     return bestSequence;
   }
 }
