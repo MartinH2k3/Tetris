@@ -3,11 +3,12 @@ import { Point, Grid } from "@/utils/grid";
 import { randomChoice } from "@/utils/array_helpers";
 import {computed, onMounted, onUnmounted, reactive, Ref, ref} from "vue";
 
-const directions = {
-  "up": new Point(0, -1),
-  "down": new Point(0, 1),
-  "left": new Point(-1, 0),
-  "right": new Point(1, 0),
+const AUTOPLAY = true;
+const DIRECTIONS = {
+  "UP": new Point(0, -1),
+  "DOWN": new Point(0, 1),
+  "LEFT": new Point(-1, 0),
+  "RIGHT": new Point(1, 0),
 }
 
 type TetrominoShape = "I"|"L"|"J"|"S"|"Z"|"T"|"O";
@@ -48,6 +49,15 @@ class Tetromino {
     }
   }
 
+  validPosition(grid: Grid): boolean {
+    for (const tile of this.tiles) {
+      if (!tile.within(grid) || grid.grid[tile.y][tile.x] !== null) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   validMove(distance: Point, grid: Grid): boolean {
     for (const tile of this.tiles) {
       const newTile: Point = tile.move(distance);
@@ -70,8 +80,8 @@ class Tetromino {
 
   }
   drop(grid: Grid): void {
-    while (this.validMove(directions.down, grid)) {
-      this.move(directions.down);
+    while (this.validMove(DIRECTIONS.DOWN, grid)) {
+      this.move(DIRECTIONS.DOWN);
     }
   }
 
@@ -226,12 +236,12 @@ function handleKeyDown(event: KeyboardEvent) {
   let before = currTetromino.deepcopy();
   switch (event.key) {
     case 'ArrowLeft':
-      if (currTetromino.validMove(directions.left, grid))
-        currTetromino.move(directions.left);
+      if (currTetromino.validMove(DIRECTIONS.LEFT, grid))
+        currTetromino.move(DIRECTIONS.LEFT);
       break;
     case 'ArrowRight':
-      if (currTetromino.validMove(directions.right, grid))
-        currTetromino.move(directions.right);
+      if (currTetromino.validMove(DIRECTIONS.RIGHT, grid))
+        currTetromino.move(DIRECTIONS.RIGHT);
       break;
     case 'ArrowUp':
       if (switched)
@@ -247,8 +257,8 @@ function handleKeyDown(event: KeyboardEvent) {
       heldShape.value = temp;
       break;
     case 'ArrowDown':
-      if (currTetromino.validMove(directions.down, grid))
-        currTetromino.move(directions.down);
+      if (currTetromino.validMove(DIRECTIONS.DOWN, grid))
+        currTetromino.move(DIRECTIONS.DOWN);
       break;
     case 'x':
       // Rotate 90° clockwise (you can choose a different key)
@@ -257,6 +267,12 @@ function handleKeyDown(event: KeyboardEvent) {
     case 'z':
       // Rotate 90° counter-clockwise with 'z', for example
       currTetromino.rotateBack(grid);
+      break;
+    case 'c':
+      currTetromino.drop(grid);
+      break;
+    case 'v':
+      Solver.playBestMoves(grid, currTetromino);
       break;
   }
   renderMove(before, currTetromino);
@@ -277,8 +293,8 @@ function restartGame(){
 
 function fall(tetromino: Tetromino): void {
   let before = tetromino.deepcopy();
-  if (tetromino.validMove(directions.down, grid)) {
-    tetromino.move(directions.down);
+  if (tetromino.validMove(DIRECTIONS.DOWN, grid)) {
+    tetromino.move(DIRECTIONS.DOWN);
     renderMove(before, tetromino);
   } else if (tetromino.aboveLine(bufferHeight)) {
     lost.value = true;
@@ -329,19 +345,6 @@ function isNextCell(row: number, col: number): boolean {
   return nextShapeCells.value.some(cell => cell.x === col && cell.y === row);
 }
 
-// event listeners
-let intervalId: number | undefined;
-onMounted(() => {
-  window.addEventListener('keydown', handleKeyDown);
-  intervalId = window.setInterval(() => {
-    fall(currTetromino);
-  }, 500);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyDown);
-});
-
 // Solver
 class Solver {
   static evaluateGrid(grid: Grid): number {
@@ -366,11 +369,10 @@ class Solver {
       }
     }
     let height = Math.max(...column_heights) - clearedRows;
-    let heightSum = Math.sqrt(column_heights.reduce((a, b) => a + b, 0) - grid.width * clearedRows);
     let bumpiness = column_heights.slice(1).reduce((a, b, i) => a + Math.abs(b - column_heights[i]), 0);
-    // find some "hyperparameters" for the best evaluation function
-    let weights = [1, 1, 1, 1, 1];
-    return holes * weights[0] + height * weights[1] + heightSum * weights[2] + bumpiness * weights[3] - clearedRows * weights[4];
+    // find some "hyperparameters" for the best evaluatvion function
+    let weights = [10, 3, 2, 1];
+    return holes * weights[0] + height * weights[1] + bumpiness * weights[2] - Math.pow(2, clearedRows) * weights[3];
   }
   static bestMoves(grid: Grid, tetromino: Tetromino) {
     let bestScore = Infinity;
@@ -381,8 +383,8 @@ class Solver {
         rotated.rotate(grid);
       }
       let offset = 0;
-      while (rotated.validMove(directions.left, grid)){
-        rotated.move(directions.left);
+      while (rotated.validMove(DIRECTIONS.LEFT, grid)){
+        rotated.move(DIRECTIONS.LEFT);
         offset++;
       }
       do {
@@ -398,13 +400,47 @@ class Solver {
           bestScore = score;
           bestSequence = 'x'.repeat(rotations) + (offset >= 0 ? '<'.repeat(offset) : '>'.repeat(-offset));
         }
-        rotated.move(directions.right);
+        rotated.move(DIRECTIONS.RIGHT);
         offset--;
-      } while (rotated.validMove(directions.right, grid));
+      } while (rotated.validPosition(grid));
     }
     return bestSequence;
   }
+  static playBestMoves(grid: Grid, tetromino: Tetromino) {
+    let bestSequence = this.bestMoves(grid, tetromino);
+    while (bestSequence.length > 0){
+      for (let move of bestSequence) {
+        switch (move) {
+          case 'x':
+            tetromino.rotate(grid);
+            break;
+          case '<':
+            tetromino.move(DIRECTIONS.LEFT);
+            break;
+          case '>':
+            tetromino.move(DIRECTIONS.RIGHT);
+            break;
+        }
+      }
+      bestSequence = this.bestMoves(grid, tetromino);
+    }
+    tetromino.drop(grid);
+    tetromino.addTo(grid);
+  }
 }
+
+// event listeners
+let intervalId: number | undefined;
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
+  intervalId = window.setInterval(() => {
+    fall(currTetromino);
+  }, 500);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
+});
 </script>
 
 <template>
